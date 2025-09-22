@@ -1,38 +1,34 @@
-# sv
+# locale-helper
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A web-based tool to translate Shopify theme locale files using translator APIs.  
+Built with **SvelteKit**, this app allows you to input your theme's locale JSON, select source and target languages, and get a translated locale JSON automatically.
 
-## Creating a project
+---
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Features
 
-```sh
-# create a new project in the current directory
-npx sv create
+- Input and output JSON editors with syntax highlighting and line numbers
+- Automatic prettifying and validation of JSON
+- Language selection with support for multiple APIs (Google Translate, DeepL)
+- Handles placeholders in strings (`{variable}`) safely during translation
+- Copy translated JSON with a single click
+- Responsive layout for desktop and mobile
+- Supports batch translation for large JSON files
 
-# create a new project in my-app
-npx sv create my-app
-```
+---
 
-## Developing
+## Tech Stack
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+- **Frontend & Backend:** [SvelteKit](https://kit.svelte.dev/)
+- **State Management:** Svelte stores
+- **HTTP Requests:** Axios
+- **Utilities:** Custom utils for JSON handling and string extraction
+- **Styling:** CSS Variables, TailwindCSS optional
 
-```sh
-npm run dev
+---
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+## Supported Languages
 
-## Building
+Uses [LOCALE_CODES](./src/lib/constants.js) as reference.  
+Example supported languages:
 
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
