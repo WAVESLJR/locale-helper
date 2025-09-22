@@ -23,7 +23,7 @@ Built with **SvelteKit**, this app allows you to input your theme's locale JSON,
 - **State Management:** Svelte stores
 - **HTTP Requests:** Axios
 - **Utilities:** Custom utils for JSON handling and string extraction
-- **Styling:** CSS Variables, TailwindCSS optional
+- **Styling:** CSS
 
 ---
 
