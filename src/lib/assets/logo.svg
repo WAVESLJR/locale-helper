@@ -1,0 +1,30 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<!-- Use a linear gradient for the color scheme -->
+<defs>
+<linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" style="stop-color:#3866f2;stop-opacity:1" />
+<stop offset="100%" style="stop-color:#56c5e8;stop-opacity:1" />
+</linearGradient>
+</defs>
+
+<!-- Main icon group, centered for the favicon -->
+
+<g transform="translate(50, 50)">
+<!-- JSON Curly Braces -->
+<text x="-20" y="0" font-family="Arial, sans-serif" font-size="25" fill="#3866f2" text-anchor="middle" dominant-baseline="central" font-weight="bold">
+{ }
+</text>
+<text x="20" y="0" font-family="Arial, sans-serif" font-size="25" fill="#56c5e8" text-anchor="middle" dominant-baseline="central" font-weight="bold">
+{ }
+</text>
+
+<!-- Curved arrows for translation process -->
+<path d="M -15 -15 Q 0 -30 15 -15" stroke="url(#gradient)" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+<path d="M 15 15 Q 0 30 -15 15" stroke="url(#gradient)" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+
+<!-- Arrowheads -->
+<path d="M 15 -15 L 12 -12 M 15 -15 L 18 -12" stroke="url(#gradient)" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+<path d="M -15 15 L -12 12 M -15 15 L -18 12" stroke="url(#gradient)" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+
+</g>
+</svg>

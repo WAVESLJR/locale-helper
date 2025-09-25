@@ -9,7 +9,11 @@
 
 <main>
   <header>
-    <h1>{ `Locale Helper`.toUpperCase() }</h1>
+    <h1>
+      <span>{ `Locale`.toUpperCase() }</span>
+      <img src="/logo.svg" alt="App Logo" />
+      <span>{ `Helper`.toUpperCase() }</span>
+    </h1>
     <p class="subtitle">Translate JSON locale files with ease</p>
   </header>
 
@@ -34,6 +38,14 @@
     font-weight: 700;
     margin-bottom: 0.5rem;
     text-shadow: 2px 2px 4px rgba(var(--color-black),0.3);
+    display: inline-block;
+  }
+
+  h1 > * {
+    display: inline;
+    height: 5rem;
+    aspect-ratio: 1 / 1;
+    font-size: 4rem;
   }
 
   .subtitle {
