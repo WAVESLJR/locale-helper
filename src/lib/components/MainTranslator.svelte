@@ -288,7 +288,7 @@
         />
         {#if inputMode === 'json'}
           <div class="helper-text">
-            Enter your locale JSON here. Example: {{"welcome": "Hello {name}!"}}
+            Enter your locale JSON here. Example: {`{"welcome": "Hello {name}!"}`}
           </div>
         {:else}
           <div class="helper-text">

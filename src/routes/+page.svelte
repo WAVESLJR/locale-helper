@@ -9,7 +9,7 @@
 
 <main>
   <header>
-    <h1>Locale Helper</h1>
+    <h1>{ `Locale Helper`.toUpperCase() }</h1>
     <p class="subtitle">Translate JSON locale files with ease</p>
   </header>
 
@@ -19,21 +19,21 @@
 <style>
   main {
     min-height: 100vh;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: linear-gradient(135deg, var(--color-gray-100) 0%, var(--color-gray-200) 100%);
     padding: 2rem 1rem;
   }
 
   header {
     text-align: center;
     margin-bottom: 3rem;
-    color: white;
+    color: var(--color-gray-800);
   }
 
   h1 {
     font-size: 3rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    text-shadow: 2px 2px 4px rgba(var(--color-black),0.3);
   }
 
   .subtitle {

@@ -33,6 +33,7 @@
   button {
     padding: var(--space-2) var(--space-4);
     border: none;
+    border-radius: 0;
     background: var(--color-white);
     cursor: pointer;
     font-size: var(--text-sm);
@@ -40,10 +41,6 @@
     color: var(--color-gray-700);
     transition: all var(--transition-fast);
     flex: 1;
-  }
-
-  button:not(:last-child) {
-    border-right: 1px solid var(--color-gray-200);
   }
 
   button:hover:not(.active) {
