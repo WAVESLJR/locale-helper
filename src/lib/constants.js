@@ -1,3 +1,4 @@
+// Locale codes and their display names for Shopify
 export const LOCALE_CODES = {
   'bg': 'bg',       // Bulgarian
   'cs': 'cs',       // Czech
@@ -32,7 +33,42 @@ export const LOCALE_CODES = {
   'zh-TW': 'zh-TW'  // Chinese (Traditional)
 };
 
+// Language display names
+export const LANGUAGE_NAMES = {
+  'bg': 'Bulgarian',
+  'cs': 'Czech', 
+  'da': 'Danish',
+  'de': 'German',
+  'el': 'Greek',
+  'en': 'English',
+  'es': 'Spanish',
+  'fi': 'Finnish',
+  'fr': 'French',
+  'hr': 'Croatian',
+  'hu': 'Hungarian',
+  'id': 'Indonesian',
+  'it': 'Italian',
+  'ja': 'Japanese',
+  'ko': 'Korean',
+  'lt': 'Lithuanian',
+  'nb': 'Norwegian',
+  'nl': 'Dutch',
+  'pl': 'Polish',
+  'pt-BR': 'Portuguese (Brazil)',
+  'pt-PT': 'Portuguese (Portugal)',
+  'ro': 'Romanian',
+  'ru': 'Russian',
+  'sk': 'Slovak',
+  'sl': 'Slovenian',
+  'sv': 'Swedish',
+  'th': 'Thai',
+  'tr': 'Turkish',
+  'vi': 'Vietnamese',
+  'zh-CN': 'Chinese (Simplified)',
+  'zh-TW': 'Chinese (Traditional)'
+};
 
+// API supported languages for translation services
 export const API_SUPPORTED_LANGUAGES = {
   google: [
     'bg','cs','da','de','el','en','es','fi','fr','hr','hu','id','it','ja','ko','lt',

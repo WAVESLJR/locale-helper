@@ -1,229 +1,301 @@
 <script>
-  import { handleTab, generateLineNumbers, highlightJson } from '$lib/utils/code-utils.js';
-  import { writable } from 'svelte/store';
-  import { prettifyJson } from '$lib/utils/json-utils.js';
+  import { prettifyJson, isValidLocaleJson, fixJsonIssues } from '$lib/utils/json-utils.js';
 
-  export let value = ''; // initial JSON / partial JSON
+  export let value = '';
   export let onChange = null;
   export let readOnly = false;
-  export let maxHeight = '300px'; // optional prop with default
-
+  export let maxHeight = '300px';
   export let rows = 10; 
-  export let cols = 50; // optional, default width
-
   export let mode = 'json';
 
-  const content = writable(value);
   let textarea;
-  let displayDiv;
-  let gutterDiv;
-
-  // Reactive line numbers
-  let lines = generateLineNumbers(value);
-  $: lines = generateLineNumbers($content);
-  $: lineCount = lines.length;
-
-  // Scroll sync
-  const handleScroll = () => {
-    if (displayDiv && textarea && gutterDiv) {
-      displayDiv.scrollTop = textarea.scrollTop;
-      displayDiv.scrollLeft = textarea.scrollLeft;
-      gutterDiv.scrollTop = textarea.scrollTop; // sync vertical only
-    }
+  let copied = false;
+  
+  // Simple input handler
+  const handleInput = (e) => {
+    const newValue = e.target.value;
+    value = newValue;
+    if (onChange) onChange(newValue);
   };
 
-  const handleInput = (e) => {
-    let v = e.target.value;
-
-    if (mode === 'json') {
-      // Optionally detect certain hints, e.g., starts with { or contains certain keys
-      const hint = v.trim().startsWith('{'); // simple hint, can customize
-      if (hint) {
-        try {
-          const pretty = prettifyJson(v, 2);
-          v = pretty; // overwrite with prettified
-        } catch (err) {
-          // invalid JSON, ignore
+  // Manual format function
+  const formatJson = () => {
+    if (mode !== 'json' || !value.trim()) return;
+    
+    try {
+      let parsed = JSON.parse(value);
+      if (isValidLocaleJson(parsed)) {
+        const formatted = prettifyJson(parsed, 2);
+        value = formatted;
+        if (onChange) onChange(formatted);
+      }
+    } catch (_) {
+      try {
+        const fixed = fixJsonIssues(value);
+        const parsed = JSON.parse(fixed);
+        if (isValidLocaleJson(parsed)) {
+          const formatted = prettifyJson(parsed, 2);
+          value = formatted;
+          if (onChange) onChange(formatted);
         }
+      } catch (_) {
+        // Invalid JSON, leave as-is
       }
     }
-
-    content.set(v);
-    if (onChange) onChange(v);
   };
 
+  // Reset function
+  const resetContent = () => {
+    value = '';
+    if (onChange) onChange('');
+    if (textarea) textarea.focus();
+  };
+
+  // Copy function
+  const copyContent = async () => {
+    if (!value.trim()) return;
+    
+    try {
+      await navigator.clipboard.writeText(value);
+      copied = true;
+      setTimeout(() => copied = false, 1500);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  // Tab handling
   const handleKeyDown = (e) => {
     if (e.key === 'Tab') {
       e.preventDefault();
-      const result = handleTab(
-        textarea.value,
-        textarea.selectionStart,
-        textarea.selectionEnd,
-        e.shiftKey
-      );
-      textarea.value = result.text;
-      textarea.selectionStart = textarea.selectionEnd = result.cursor;
-      content.set(result.text);
-      if (onChange) onChange(result.text);
+      const start = e.target.selectionStart;
+      const end = e.target.selectionEnd;
+      
+      if (e.shiftKey) {
+        // Remove indent
+        const lines = value.split('\n');
+        const startLine = value.substring(0, start).split('\n').length - 1;
+        const endLine = value.substring(0, end).split('\n').length - 1;
+        
+        for (let i = startLine; i <= endLine; i++) {
+          if (lines[i].startsWith('  ')) {
+            lines[i] = lines[i].substring(2);
+          }
+        }
+        
+        const newValue = lines.join('\n');
+        value = newValue;
+        if (onChange) onChange(newValue);
+        
+        setTimeout(() => {
+          e.target.selectionStart = Math.max(0, start - 2);
+          e.target.selectionEnd = Math.max(0, end - 2);
+        }, 0);
+      } else {
+        // Add indent
+        const newValue = value.substring(0, start) + '  ' + value.substring(end);
+        value = newValue;
+        if (onChange) onChange(newValue);
+        
+        setTimeout(() => {
+          e.target.selectionStart = e.target.selectionEnd = start + 2;
+        }, 0);
+      }
     }
   };
+
+  // Line count
+  $: lines = value.split('\n').length;
 </script>
 
-<div class="code-inspector" style="--ci-max-height: {maxHeight};">
-  <!-- Line numbers gutter -->
-  <div class="gutter" bind:this={gutterDiv}>
-    {#each lines as line}
-      <div class="line-number">{line}</div>
-    {/each}
-  </div>
-
-  <!-- Editor area: display + textarea -->
-  <div class="editor-area">
-    <!-- Display layer (syntax highlighting) -->
-    <div
-      class="display"
-      bind:this={displayDiv}
-      tabindex="0"
-      role="textbox"
-      aria-label="JSON editor display"
-      on:click={() => textarea.focus()}
-      on:keydown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          textarea.focus();
-        }
-      }}
-    >
-      {@html highlightJson($content)}
+<div class="editor-container">
+  <div class="editor-header">
+    <div class="buttons">
+      {#if mode === 'json'}
+        <button type="button" class="btn" on:click={formatJson} disabled={!value.trim()}>
+          Format
+        </button>
+      {/if}
+      <button type="button" class="btn" on:click={resetContent} disabled={!value.trim()}>
+        Reset
+      </button>
+      <button type="button" class="btn copy" on:click={copyContent} disabled={!value.trim()}>
+        {copied ? 'Copied!' : 'Copy'}
+      </button>
     </div>
-
-    <!-- Invisible textarea for capturing input -->
+    <span class="line-count">{lines} lines</span>
+  </div>
+  
+  <div class="editor" style="--max-height: {maxHeight};">
     <textarea
       bind:this={textarea}
-      bind:value={$content}
-      rows={rows}
-      cols={cols}
+      bind:value={value}
       on:input={handleInput}
       on:keydown={handleKeyDown}
-      on:scroll={handleScroll}
-      spellcheck="false"
+      {rows}
       {readOnly}
+      spellcheck="false"
+      placeholder={mode === 'json' ? 'Enter JSON here...' : 'Enter text here...'}
     ></textarea>
   </div>
 </div>
 
-<div class="linecount">{lineCount} lines</div>
-
 <style>
-/* Variables */
-:root {
-  --gutter-width: 3rem; /* Adjust gutter width */
-  --font-size: 14px;
-  --line-height: 1.5rem;
-  --tab-size: 4;
-}
+  .editor-container {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    overflow: hidden;
+    background: white;
+  }
 
-/* Syntax highlighting classes */
-:global(.key) { color: brown; }
-:global(.string) { color: green; }
-:global(.number) { color: blue; }
-:global(.boolean) { color: purple; }
-:global(.null) { color: gray; }
+  .editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    min-height: 3rem;
+    box-sizing: border-box;
+  }
 
-/* Editor layout */
-.code-inspector {
-  position: relative;
-  display: flex;
-  font-family: monospace;
-  font-size: var(--font-size);
-  line-height: var(--line-height);
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  min-height: 200px;
-  max-height: var(--ci-max-height, 300px); /* use CSS variable */
-  overflow: hidden;
-}
+  .buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
 
-/* Gutter for line numbers */
-.gutter {
-  width: var(--gutter-width);
-  background: #f7f7f7;
-  padding: 0.5rem;
-  text-align: right;
-  user-select: none;       /* prevents selection highlighting */
-  pointer-events: none; 
-}
+  .btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-width: 60px;
+  }
 
-/* Editor area: display + textarea */
-.editor-area {
-  position: relative;
-  flex: 1;
-  overflow: hidden;
-}
+  .btn:not(.copy) {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+  }
 
-.line-number {
-  line-height: var(--line-height);
-  pointer-events: none;    /* ensures cursor cannot appear here */
-  user-select: none;       /* cannot select line numbers */
-}
+  .btn:not(.copy):hover:not(:disabled) {
+    background: #0056b3;
+    border-color: #004085;
+  }
 
-/* Display layer */
-.display {
-  padding: 0.5rem;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow: auto;
-  position: relative;
-  z-index: 1;
-  pointer-events: none; 
-  font-family: monospace;
-  font-size: var(--font-size);
-  line-height: var(--line-height);
-  tab-size: var(--tab-size);
-}
+  .btn.copy {
+    background: #28a745;
+    color: white;
+    border-color: #28a745;
+  }
 
-/* Textarea */
-textarea {
-  position: absolute;
-  top: 0;
-  left: 0;             /* fill editor-area */
-  width: 100%;
-  height: 100%;
-  padding: 0.5rem;     /* same as display */
-  border: none;
-  resize: none;
-  outline: none;
-  font-family: monospace;
-  font-size: var(--font-size);
-  line-height: var(--line-height);
-  background: transparent;
-  color: transparent;
-  caret-color: black;
-  z-index: 2;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  tab-size: var(--tab-size);
-}
+  .btn.copy:hover:not(:disabled) {
+    background: #1e7e34;
+    border-color: #1c7430;
+  }
 
-/* Line count below editor */
-.linecount {
-  font-size: 0.8rem;
-  color: #666;
-  margin-top: 0.25rem;
-}
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+  }
 
-/* Optional: style scrollbar to match editor */
-.display::-webkit-scrollbar,
-textarea::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
 
-.display::-webkit-scrollbar-thumb,
-textarea::-webkit-scrollbar-thumb {
-  background-color: rgba(0,0,0,0.2);
-  border-radius: 3px;
-}
+  .line-count {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 500;
+    white-space: nowrap;
+  }
 
+  .editor {
+    max-height: var(--max-height, 300px);
+    overflow: hidden;
+  }
+
+  textarea {
+    width: 100%;
+    height: 100%;
+    min-height: 200px;
+    padding: 1rem;
+    border: none;
+    resize: none;
+    outline: none;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    tab-size: 2;
+    background: white;
+    color: #333;
+    overflow: auto;
+    box-sizing: border-box;
+  }
+
+  textarea:focus {
+    background: #fafafa;
+  }
+
+  textarea::placeholder {
+    color: #9ca3af;
+    font-style: italic;
+  }
+
+  textarea:read-only {
+    background: #f8f9fa;
+    color: #6c757d;
+  }
+
+  /* Mobile responsiveness */
+  @media (max-width: 640px) {
+    .editor-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+      padding: 0.75rem;
+    }
+
+    .buttons {
+      justify-content: center;
+      order: 2;
+    }
+
+    .line-count {
+      text-align: center;
+      order: 1;
+    }
+
+    .btn {
+      flex: 1;
+      min-width: 0;
+      padding: 0.5rem 0.75rem;
+    }
+
+    textarea {
+      font-size: 16px; /* Prevents zoom on iOS */
+      padding: 0.75rem;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .editor-header {
+      padding: 0.5rem;
+    }
+
+    .btn {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.75rem;
+    }
+
+    textarea {
+      padding: 0.5rem;
+    }
+  }
 </style>
