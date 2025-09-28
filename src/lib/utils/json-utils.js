@@ -9,9 +9,15 @@ export const normalizeJson = (str) => {
 // Fix common JSON issues for locale files
 export const fixJsonIssues = (jsonStr) => {
   let fixed = jsonStr.trim();
+
+  // Remove trailing commas at the very end
+  fixed = fixed.replace(/,\s*$/, '');
   
-  // Remove trailing commas before closing braces
+  // Remove trailing commas before closing braces (this was missing!)
   fixed = fixed.replace(/,(\s*})/g, '$1');
+  
+  // Remove trailing commas before closing brackets  
+  fixed = fixed.replace(/,(\s*])/g, '$1');
   
   // Try to add outer braces if it looks like object content
   if (!fixed.startsWith('{')) {
@@ -119,3 +125,34 @@ export const validateAndFormatLocaleJson = (jsonStr, spaces = 2) => {
     originalFixed: parseResult.fixedJson
   };
 };
+
+
+/**
+ * Convert complete JSON object to partial JSON (removes outer braces)
+ * Only works if input is a valid JSON object
+ */
+export function makePartialJson(jsonStr) {
+  if (!jsonStr || typeof jsonStr !== 'string') {
+    return jsonStr;
+  }
+  
+  const trimmed = jsonStr.trim();
+  
+  try {
+    // Check if it's valid JSON
+    const parsed = JSON.parse(trimmed);
+    
+    // Check if it's an object (not array, string, number, etc.)
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      // Remove outer braces and add trailing comma
+      return trimmed.slice(1, -1) + ',';
+    }
+    
+    // Not an object, return as-is
+    return jsonStr;
+    
+  } catch (error) {
+    // Invalid JSON, return as-is
+    return jsonStr;
+  }
+}

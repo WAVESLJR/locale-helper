@@ -10,7 +10,7 @@
   // Generate sorted array of locale codes with full names
   export let languages = Object.keys(LOCALE_CODES)
     .map(code => ({ code, name: LANGUAGE_NAMES[code] || code }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => a.code.localeCompare(b.code));
 
   // Default selections from constants
   export let original = Object.keys(LOCALE_CODES)[5]; // 'en'

@@ -1,5 +1,5 @@
 <script>
-  import { prettifyJson, isValidLocaleJson, fixJsonIssues } from '$lib/utils/json-utils.js';
+  import { prettifyJson, isValidLocaleJson, fixJsonIssues, makePartialJson } from '$lib/utils/json-utils.js';
 
   export let value = '';
   export let onChange = null;
@@ -10,6 +10,7 @@
 
   let textarea;
   let copied = false;
+  let partialCopied = false;
   
   // Simple input handler
   const handleInput = (e) => {
@@ -18,11 +19,12 @@
     if (onChange) onChange(newValue);
   };
 
-  // Manual format function
+  // Fixed formatJson function that handles trailing commas
   const formatJson = () => {
     if (mode !== 'json' || !value.trim()) return;
     
     try {
+      // First try parsing as-is
       let parsed = JSON.parse(value);
       if (isValidLocaleJson(parsed)) {
         const formatted = prettifyJson(parsed, 2);
@@ -30,6 +32,7 @@
         if (onChange) onChange(formatted);
       }
     } catch (_) {
+      // If parsing fails, try to fix common issues first
       try {
         const fixed = fixJsonIssues(value);
         const parsed = JSON.parse(fixed);
@@ -39,8 +42,21 @@
           if (onChange) onChange(formatted);
         }
       } catch (_) {
-        // Invalid JSON, leave as-is
+        // If still invalid, leave as-is
+        console.log('JSON could not be formatted - leaving as-is');
       }
+    }
+  };
+
+  const copyPartialJson = async () => {
+    if (mode !== 'json' || !value.trim()) return;
+    
+    try {
+      await navigator.clipboard.writeText(makePartialJson(value));
+      partialCopied = true;
+      setTimeout(() => partialCopied = false, 1500);
+    } catch (err) {
+      console.error('Failed to (partial) copy:', err);
     }
   };
 
@@ -122,6 +138,11 @@
       <button type="button" class="btn copy" on:click={copyContent} disabled={!value.trim()}>
         {copied ? 'Copied!' : 'Copy'}
       </button>
+      {#if mode === 'json' && readOnly}
+        <button type="button" class="btn copy" on:click={copyPartialJson} disabled={!value.trim()}>
+          {partialCopied ? 'Partial Copied!' : 'Partial Copy'}
+        </button>
+      {/if}
     </div>
     <span class="line-count">{lines} lines</span>
   </div>

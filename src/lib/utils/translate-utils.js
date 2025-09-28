@@ -19,8 +19,8 @@ export function encodePlaceholders(str) {
 export function decodePlaceholders(str, placeholders) {
   let result = str;
   placeholders.forEach((p, i) => {
-    const marker = `\\$@_${i + 1}_@\\$`;  // Escape the $ characters
-    result = result.replace(new RegExp(marker, 'g'), `{${p}}`);
+    const marker = `$@_${i + 1}_@$`;  // FIXED: Remove escaped backslashes
+    result = result.replace(new RegExp(marker.replace(/\$/g, '\\$'), 'g'), `{${p}}`);
   });
   return result;
 }
@@ -32,7 +32,6 @@ export function decodePlaceholders(str, placeholders) {
 export function extractStrings(obj, parentKey = '') {
   const result = [];
   
-  // Input validation
   if (!obj || typeof obj !== 'object') {
     return result;
   }
@@ -49,27 +48,16 @@ export function extractStrings(obj, parentKey = '') {
     const value = obj[key];
 
     if (typeof value === 'string') {
+      // Extract placeholders for this string
       const { text, placeholders } = encodePlaceholders(value);
-      // Store original value and placeholders separately
-      result.push({ keyPath: fullKey, value: value, placeholders });
-    } else if (Array.isArray(value)) {
-      for (let index = 0; index < value.length; index++) {
-        const item = value[index];
-        const arrayKey = `${fullKey}[${index}]`;
-        if (typeof item === 'string') {
-          const { text, placeholders } = encodePlaceholders(item);
-          result.push({ keyPath: arrayKey, value: item, placeholders });
-        } else if (isObject(item)) {
-          result.push(...extractStrings(item, arrayKey));
-        }
-      }
+      result.push({ 
+        keyPath: fullKey, 
+        value: value,           // Original string
+        encodedValue: text,     // Encoded version  
+        placeholders: placeholders 
+      });
     } else if (isObject(value)) {
-      if (Object.keys(value).length === 1 && value.hasOwnProperty('label') && typeof value.label === 'string') {
-        const { text, placeholders } = encodePlaceholders(value.label);
-        result.push({ keyPath: fullKey, value: value.label, placeholders });
-      } else {
-        result.push(...extractStrings(value, fullKey));
-      }
+      result.push(...extractStrings(value, fullKey));
     }
   }
 
@@ -78,26 +66,48 @@ export function extractStrings(obj, parentKey = '') {
 
 /**
  * Convert array of string objects to encoded text for translator
- * This is the key fix - encode the placeholders for translation
  */
 export function prepareTranslatorText(strings) {
-  return strings.map((s) => {
-    const { text } = encodePlaceholders(s.value);
-    return text;
-  }).join('\n');
+  return strings.map((s) => s.encodedValue).join('\n');  // FIXED: Use pre-encoded value
 }
 
 /**
- * Map translated lines back to the original JSON keys
+ * Enhanced mapTranslatedBack - handles all placeholder cases
  */
-export function mapTranslatedBack(strings, translatedLines) {
-  const output = {};
-  strings.forEach((s, idx) => {
-    const translated = decodePlaceholders(translatedLines[idx], s.placeholders);
-    output[s.keyPath] = translated;
-  });
-  return output;
+export function mapTranslatedBack(translatedText, extractedStrings) {
+  // FIXED: Add validation
+  if (!translatedText || typeof translatedText !== 'string') {
+    throw new Error(`Invalid translatedText: expected string, got ${typeof translatedText}`);
+  }
+  
+  const translatedLines = translatedText.trim().split('\n').map(line => line.trim());
+  const result = {};
+  
+  if (translatedLines.length !== extractedStrings.length) {
+    throw new Error(`Translation mismatch: Expected ${extractedStrings.length} lines, got ${translatedLines.length}`);
+  }
+  
+  for (let i = 0; i < extractedStrings.length; i++) {
+    const extracted = extractedStrings[i];
+    const translatedValue = translatedLines[i];
+    
+    // Handle placeholders based on what the original had
+    let finalValue;
+    
+    if (extracted.placeholders.length === 0) {
+      // Case: No placeholders in original
+      finalValue = translatedValue;
+    } else {
+      // Case: Had placeholders, decode them
+      finalValue = decodePlaceholders(translatedValue, extracted.placeholders);
+    }
+    
+    result[extracted.keyPath] = finalValue;
+  }
+    
+  return result;
 }
+
 
 /**
  * Validate translations have correct placeholder count
@@ -118,40 +128,38 @@ export function validateTranslations(strings, translatedLines) {
 
 /**
  * Expand flat key-value map back to nested JSON structure
+ * Fixed to properly handle nested objects like options__1.label
  */
-export function expandKeyMapToJson(map) {
+export function expandKeyMapToJson(translatedMap) {
   const result = {};
-  for (const keyPath in map) {
+  
+  // Sort keys by depth to ensure parent objects are created first
+  const sortedKeys = Object.keys(translatedMap).sort((a, b) => {
+    return a.split('.').length - b.split('.').length;
+  });
+  
+  for (const keyPath of sortedKeys) {
+    const value = translatedMap[keyPath];
     const parts = keyPath.split('.');
+    
     let current = result;
     
-    parts.forEach((part, idx) => {
-      // Handle array notation like "items[0]"
-      if (part.includes('[') && part.includes(']')) {
-        const [arrayKey, indexStr] = part.split('[');
-        const index = parseInt(indexStr.replace(']', ''));
-        
-        if (!current[arrayKey]) {
-          current[arrayKey] = [];
-        }
-        
-        if (idx === parts.length - 1) {
-          current[arrayKey][index] = map[keyPath];
-        } else {
-          if (!current[arrayKey][index]) {
-            current[arrayKey][index] = {};
-          }
-          current = current[arrayKey][index];
-        }
-      } else {
-        if (idx === parts.length - 1) {
-          current[part] = map[keyPath];
-        } else {
-          current[part] = current[part] || {};
-          current = current[part];
-        }
+    // Navigate to the correct position, creating objects as needed
+    for (let i = 0; i < parts.length - 1; i++) {
+      const part = parts[i];
+      
+      // Create the object if it doesn't exist
+      if (!current[part]) {
+        current[part] = {};
       }
-    });
+      
+      current = current[part];
+    }
+    
+    // Set the final value
+    const finalKey = parts[parts.length - 1];
+    current[finalKey] = value;
   }
+  
   return result;
 }

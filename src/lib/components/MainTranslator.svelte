@@ -169,6 +169,7 @@
     }
   };
 
+
   // Step 3: Rebuild JSON from translated text
   function handleRebuild() {
     clearMessages();
@@ -191,7 +192,8 @@
         throw new Error(`Translation validation failed: ${validation.error}`);
       }
 
-      const mapped = mapTranslatedBack(extractedStrings, translatedLines);
+      // FIXED: Pass translatedText (string) first, then extractedStrings
+      const mapped = mapTranslatedBack(textToProcess, extractedStrings);
       const expandedJson = expandKeyMapToJson(mapped);
       
       responseJson = prettifyJson(expandedJson);
