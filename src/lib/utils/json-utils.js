@@ -145,7 +145,8 @@ export function makePartialJson(jsonStr) {
     // Check if it's an object (not array, string, number, etc.)
     if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
       // Remove outer braces and add trailing comma
-      return trimmed.slice(1, -1) + ',';
+      const content = trimmed.slice(1, -1).trimEnd();
+      return content + ',';
     }
     
     // Not an object, return as-is
